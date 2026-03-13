@@ -1,104 +1,36 @@
 import cv2
-import numpy as np
-import os
-face_net = cv2.dnn.readNetFromCaffe("data/DNN/deploy.prototxt", "data/DNN/res10_300x300_ssd_iter_140000.caffemodel")
-face_cascade = cv2.CascadeClassifier("data/haarcascades/haarcascade_frontalface_default.xml")
-eye_cascade = cv2.CascadeClassifier('data/haarcascades/haarcascade_eye.xml')
 
-input_folder = "images"
-output_folder = "output"
+net = cv2.dnn.readNetFromCaffe("data/MobileNet/mobilenet_deploy.prototxt", "data/MobileNet/mobilenet.caffemodel")
+classes = []
 
-formats = ('.jpg', '.jpeg', '.png', '.webp', '.tiff')
+with open('data/MobileNet/synset.txt', 'r', encoding = 'utf-8') as f:
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
 
-os.makedirs(output_folder, exist_ok=True)
-files = sorted(os.listdir(input_folder))
-# start_index = files.index(0)
+        parts = line.split(' ', 1)
+        name = parts[1] if len(parts) > 1 else parts[0]
+        classes.append(name)
 
-for file in files:
-    if not file.lower().endswith(formats):
-        continue
 
-    path = os.path.join(input_folder, file)
-    img = cv2.imread(path)
-    if img is None:
-        continue
+image = cv2.imread('images/Leopard.jpg')
+blob = cv2.dnn.blobFromImage(cv2.resize(image, (224, 224)), 1.0 / 127.5, (224, 224), (127.5, 127.5))
 
-    output_path = os.path.join(output_folder, file)
-    cv2.imwrite(output_path, img)
+net.setInput(blob)
+preds = net.forward() #preds - імовірність
 
-img = cv2.imread('images/people.jpg')
+index = preds[0].argmax()
 
-img_copy = img.copy()
+label = classes[index] if index < len(classes) else "unknown"
+conf = float(preds[0][index].item()) * 100
 
-(h, w) = img.shape[:2]
-blob = cv2.dnn.blobFromImage(img, 1.0, (300, 300), (104.0, 177.0, 123.0))
+print(f'Клас: {label}')
+print(f'Ймовірність: {round(conf, 2)}%')
 
-face_net.setInput(blob)
-detections = face_net.forward()
 
-for i in range(detections.shape[2]):
-    confidence = detections[0, 0, i, 2]
-    if confidence > 0.5:
-        box = detections[0, 0, i, 3:7] * np.array((w, h, w, h))
-        (x, y, x2, y2) = box.astype('int')
-
-        x, y = max(0, x), max(0, y)
-        x2, y2 = min(w - 1, x2), min(h - 1, y2)
-
-        cv2.rectangle(img, (x, y), (x2, y2), (0, 255, 0), 2)
-
-        roi_face = img[y:y2, x:x2]
-
-        gray = cv2.cvtColor(roi_face, cv2.COLOR_BGR2GRAY)
-
-        eyes = eye_cascade.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=10, minSize=(10, 10))
-
-        for (ex, ey, ew, eh) in eyes:
-            cv2.rectangle(img, (ex, ey), (ex + ew, ey + eh), (255, 0, 0), 2)
-
-cv2.imshow('img', img)
-cv2.imwrite('images/result.jpg', img)
-
+text = label + ": " + str(int(conf)) + "%"
+cv2.putText(image, text, (10, 30), cv2.FONT_HERSHEY_TRIPLEX, 0.7, (0, 255, 0), 2)
+cv2.imshow('result', image)
 cv2.waitKey(0)
 cv2.destroyAllWindows()
-
-
-
-input_folder = "image"
-output_folder = "output"
-
-formats = ('.jpg', '.jpeg', '.png', '.webp', '.tiff')
-
-os.makedirs(output_folder, exist_ok = True)
-files = sorted(os.listdir(input_folder))
-start_index = files.index(0)
-
-for file in files[start_index:]:
-    if not file.lower().endswith(formats):
-        continue
-
-    path = os.path.join(input_folder, file)
-    img = cv2.imread(path)
-    if img is None:
-        continue
-
-    output_path = os.path.join(output_folder, file)
-    cv2.imwrite(output_path, img)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
