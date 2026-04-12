@@ -62,7 +62,7 @@ while True:
                 speed_m = (dist_pix / PPM) * fps
                 speed_kmh = speed_m * 3.6
 
-                cv2.putText(frame, f'id:{track_id}:{int(speed_kmh)}km/h', (x, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
+                cv2.putText(frame, f'id:{track_id}:{int(speed_kmh)}km/h', (int(x), int(y)), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 0), 2)
 
             track_history[track_id] = (x, y)
 
